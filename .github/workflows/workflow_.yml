@@ -1,7 +1,7 @@
 name: 工业视觉AI情报Agent（自动发邮箱）
 on:
   schedule:
-    - cron: '14 7 * * *'  # 每天北京时间 9 点自动运行
+    - cron: '22 7 * * *'  # 每天北京时间 9 点自动运行
   workflow_dispatch:      # 支持手动触发
 
 jobs:
