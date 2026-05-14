@@ -1,7 +1,7 @@
 name: 工业视觉AI情报Agent（自动发邮箱）
 on:
   schedule:
-    - cron: '22 7 * * *'  # 每天北京时间 9 点自动运行
+    - cron: '25 7 * * *'  # 每天北京时间 9 点自动运行
   workflow_dispatch:      # 支持手动触发
 
 jobs:
@@ -75,7 +75,7 @@ jobs:
           echo "今日工业视觉情报日报已生成，附件为PDF文件。" >> email.txt
           echo "---" >> email.txt
           echo "生成时间：$(date)" >> email.txt
-          cat email.txt | mail -a "industrial_vision_daily_$TODAY.pdf" -s "工业视觉日报 $TODAY" 1174067780@qq.com
+          cat email.txt | mail -a "industrial_vision_daily_$TODAY.pdf" -s "工业视觉日报 $TODAY" yuchengxiang.ads@163.com
 
       - name: 上传PDF文件（可选，方便直接下载）
         uses: actions/upload-artifact@v4
