@@ -1,7 +1,7 @@
 name: 工业视觉AI情报Agent（自动发邮箱）
 on:
   schedule:
-    - cron: '25 7 * * *'  # 每天北京时间 9 点自动运行
+    - cron: '38 7 * * *'  # 每天北京时间 9 点自动运行
   workflow_dispatch:      # 支持手动触发
 
 jobs:
@@ -70,7 +70,7 @@ jobs:
         run: |
           TODAY=$(date +%Y-%m-%d)
           echo "Subject: 工业视觉日报 $TODAY" > email.txt
-          echo "To: 1174067780@qq.com" >> email.txt
+          echo "To: yuchengxiang.ads@163.com" >> email.txt
           echo "" >> email.txt
           echo "今日工业视觉情报日报已生成，附件为PDF文件。" >> email.txt
           echo "---" >> email.txt
