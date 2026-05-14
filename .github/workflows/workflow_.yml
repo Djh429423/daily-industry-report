@@ -1,0 +1,84 @@
+name: 工业视觉AI情报Agent（自动发邮箱）
+on:
+  schedule:
+    - cron: '0 1 * * *'  # 每天北京时间 9 点自动运行
+  workflow_dispatch:      # 支持手动触发
+
+jobs:
+  agent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 拉取仓库代码
+        uses: actions/checkout@v4
+
+      - name: 安装依赖工具
+        run: |
+          sudo apt update
+          sudo apt install -y curl jq pandoc html2text mailutils
+
+      - name: 【Agent步骤1】抓取行业资讯
+        run: |
+          # 抓取头部厂商新闻
+          curl -s https://www.cognex.com/en-us/news | html2text > cognex.txt
+          curl -s https://www.baslerweb.com/en/news | html2text > basler.txt
+          curl -s https://www.mvtec.com/en/news | html2text > mvtec.txt
+          curl -s https://www.advantech.com/en/resources/news | html2text > advantech.txt
+          # 合并所有资讯
+          cat *.txt > all_news.txt
+
+      - name: 【Agent步骤2】AI生成日报
+        run: |
+          TODAY=$(date +%Y-%m-%d)
+          # 构建AI提示词
+          cat > prompt.txt << EOF
+          你是专业工业视觉行业情报分析师，根据下面的资讯，生成一份《全球工业视觉市场情报日报》。
+          日期：$TODAY
+          方向：工业视觉 / AI检测 / 3D视觉 / 机器人视觉
+          用途：销售话题、方案储备、POC判断
+
+          请严格按照以下结构输出：
+          一、今日核心结论（3条以内）
+          二、今日最值得关注的3个行业机会
+          三、头部厂商产品动态（Cognex/Basler/MVTec/研华等）
+          四、技术趋势更新
+          五、市场与应用需求变化
+          六、对我公司的业务建议
+          七、今日行动建议（销售/技术/客户拜访）
+
+          要求：语言商务简洁，可直接用于销售沟通，突出POC、量产、边缘AI、平台化等关键词，最后加免责声明。
+          EOF
+          # 把资讯内容追加到提示词中
+          cat all_news.txt >> prompt.txt
+
+          # 调用DeepSeek免费API生成报告（如需替换为其他模型，修改此处即可）
+          curl -s https://api.deepseek.com/chat/completions \
+            -H "Authorization: Bearer ${{ secrets.DEEPSEEK_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "model": "deepseek-chat",
+              "messages": [{"role":"user","content": "'"$(cat prompt.txt | tr '\n' ' ' | sed 's/"/\\"/g')"'"}]
+            }' | jq -r '.choices[0].message.content' > report.md
+
+      - name: 【Agent步骤3】生成PDF日报
+        run: |
+          TODAY=$(date +%Y-%m-%d)
+          pandoc -s report.md -o industrial_vision_daily_$TODAY.pdf
+
+      - name: 【Agent步骤4】发送PDF到你的QQ邮箱
+        run: |
+          TODAY=$(date +%Y-%m-%d)
+          echo "Subject: 工业视觉日报 $TODAY" > email.txt
+          echo "To: 1174067780@qq.com" >> email.txt
+          echo "" >> email.txt
+          echo "今日工业视觉情报日报已生成，附件为PDF文件。" >> email.txt
+          echo "---" >> email.txt
+          echo "生成时间：$(date)" >> email.txt
+          cat email.txt | mail -a "industrial_vision_daily_$TODAY.pdf" -s "工业视觉日报 $TODAY" 1174067780@qq.com
+
+      - name: 上传PDF文件（可选，方便直接下载）
+        uses: actions/upload-artifact@v4
+        with:
+          name: industrial-vision-daily-report
+          path: *.pdf
